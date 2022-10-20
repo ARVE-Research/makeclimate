@@ -48,7 +48,7 @@ if test "x$FC_REALNAME" = xifort; then
 elif test "x$FC_REALNAME" = xgfortran; then
 
   CPPFLAGS="-Dgfortran $CPPFLAGS"
-  FCFLAGS="-I$NETCDF_FCFLAGS"
+  FCFLAGS="$FCFLAGS -I$NETCDF_FCFLAGS"
 
 fi
 

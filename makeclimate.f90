@@ -5,7 +5,7 @@ program makeclimate
 ! based on a climatological monthly mean baseline climate (12 months)
 ! and an interannual variability file containing monthly anomalies for
 ! several climate variables. Typically interannual variability is provided by the
-! 20th Century Reanalysis in the form of anomalies relative to the period covered
+! 20th Century Reanalysis in the form of anomalies reydimvarive to the period covered
 ! by the baseline climatology (varies per variable)
 
 ! ===== prerequisite input files both covering the target region and at target resolution =====
@@ -13,7 +13,7 @@ program makeclimate
 ! elevation (elv) (m)
 ! temperature at 2m (tmp) (degC)
 ! diurnal temperature range at 2m (dtr) (degC)
-! total accumulated precipitation (pre) (mm)
+! total accumuydimvared precipitation (pre) (mm)
 ! days with measurable precipitation (wet) (days)
 ! cloud cover full column (cld) (percent)
 ! windspeed at 10m (wnd) (m s-1)
@@ -22,7 +22,7 @@ program makeclimate
 ! --- interannual variability anomalies (separate files) ---
 ! temperature at 2m (tmp) (degC)
 ! diurnal temperature range (dtr) (degC)
-! accumulated precipitation (apcp) (mm)
+! accumuydimvared precipitation (apcp) (mm)
 ! cloud cover full column (tdcd) (percent)
 ! windspeed at 10m (wspd) (m s-1)
 ! lightning strokes (lght) (strokes km-2 d-1)
@@ -100,11 +100,13 @@ integer, dimension(12) :: ndm
 
 type(randomstate) :: rndst
 
-real(dp),    allocatable, dimension(:)   :: lon
-real(dp),    allocatable, dimension(:)   :: lat
+real(dp),    allocatable, dimension(:)   :: xdimvar
+real(dp),    allocatable, dimension(:)   :: ydimvar
 real(dp),    allocatable, dimension(:)   :: time
 integer(i2), allocatable, dimension(:,:) :: var2d
 
+character(10) :: xdimname = 'lon'
+character(10) :: ydimname = 'lat'
 
 
 
@@ -167,9 +169,9 @@ c = (anomyrs - 20) / 30
 
 nblocks = a + b + c
 
-! write(0,*)'anomalies have',anomyrs,'years of data'
-! write(0,*)tlen_anom
-! write(0,*)a,b,c,nblocks
+write(0,*)'anomalies have',anomyrs,'years of data'
+write(0,*)tlen_anom
+write(0,*)a,b,c,nblocks
 
 allocate(offset30(nblocks))
 allocate(used(nblocks))
@@ -195,7 +197,7 @@ do i = a+b+1,nblocks
 end do
 
 !------------------------------------------------------------------------
-! calculate the random sequence of blocks for timeslice (spinup) output
+! calcuydimvare the random sequence of blocks for timeslice (spinup) output
 
 if (timeslice) then
 
@@ -277,18 +279,26 @@ else
 end if
 
 !------------------------------------------------------------------------
-! get the dimensions of the input array 
+! get the dimensions of the input array
 
 ncstat = nf90_open(basefile,nf90_nowrite,bfid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-ncstat = nf90_inq_dimid(bfid,'lon',dimid)
+ncstat = nf90_inq_dimid(bfid,xdimname,dimid)
+if (ncstat /= nf90_noerr) then  ! try x instead
+  xdimname = 'x'
+  ncstat = nf90_inq_dimid(bfid,xdimname,dimid)
+end if
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_inquire_dimension(bfid,dimid,len=xlen)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-ncstat = nf90_inq_dimid(bfid,'lat',dimid)
+ncstat = nf90_inq_dimid(bfid,ydimname,dimid)
+if (ncstat /= nf90_noerr) then  ! try y instead
+  ydimname = 'y'
+  ncstat = nf90_inq_dimid(bfid,ydimname,dimid)
+end if
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_inquire_dimension(bfid,dimid,len=ylen)
@@ -298,51 +308,60 @@ tlen_out = numyrs * 12
 
 !------------------------------------------------------------------------
 ! generate the output file
+! easier to generate the output file using an ncdump of the baseline input file
 
-call netcdf_create(outfile,xlen,ylen,tlen_out,ofid)
+! call netcdf_create(outfile,xdimname,ydimname,xlen,ylen,tlen_out,ofid)
+
+ncstat = nf90_open(outfile,nf90_write,ofid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 !------------------------------------------------------------------------
 ! write the dimension variables
 
-write(0,*)'write dimension variables'
+! this will all be done through copy of the baseline input file
 
-! ---
-! lon
-
-allocate(lon(xlen))
-
-ncstat = nf90_inq_varid(bfid,'lon',varid)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_get_var(bfid,varid,lon)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_inq_varid(ofid,'lon',varid)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_put_var(ofid,varid,lon)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-deallocate(lon)
-
-! ---
-! lat
-
-allocate(lat(ylen))
-
-ncstat = nf90_inq_varid(bfid,'lat',varid)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_get_var(bfid,varid,lat)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_inq_varid(ofid,'lat',varid)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_put_var(ofid,varid,lat)
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-deallocate(lat)
+! write(0,*)'write dimension variables'
+! write(0,*)'NB, dimension variable names'
+! write(0,*)'x ',xdimname
+! write(0,*)'y ',ydimname
+! 
+! ! ---
+! ! xdimvar
+! 
+! allocate(xdimvar(xlen))
+! 
+! ncstat = nf90_inq_varid(bfid,xdimname,varid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_get_var(bfid,varid,xdimvar)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_inq_varid(ofid,xdimname,varid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_put_var(ofid,varid,xdimvar)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! deallocate(xdimvar)
+! 
+! ! ---
+! ! ydimvar
+! 
+! allocate(ydimvar(ylen))
+! 
+! ncstat = nf90_inq_varid(bfid,ydimname,varid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_get_var(bfid,varid,ydimvar)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_inq_varid(ofid,ydimname,varid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_put_var(ofid,varid,ydimvar)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! deallocate(ydimvar)
 
 ! ---
 ! time
@@ -386,6 +405,8 @@ end do
 
 ! --
 
+write(0,*)'puttime',tlen_out
+
 ncstat = nf90_inq_varid(ofid,'time',varid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
@@ -422,7 +443,7 @@ call calcvar('tmp','air',trim(anompath)//tmpfile)
 !--------------------------------------------------
 ! dtr
 
-call calcvar('dtr','dtr',trim(anompath)//dtrfile)
+call calcvar('dtr','dtr',trim(anompath)//dtrfile,llimit=0.)
 
 !--------------------------------------------------
 ! precipitation
@@ -444,6 +465,8 @@ call calcvar('wnd','wspd',trim(anompath)//wndfile,llimit=0.)
 
 call calcvar('lght','lght',trim(anompath)//lghtfile,llimit=0.)
 
+goto 100
+
 !--------------------------------------------------
 ! wet days
 
@@ -451,6 +474,8 @@ call calcwetf(wetVprefile)
 
 !------------------------------------------------------------------------
 ! close files 
+
+100 continue
 
 write(0,*)
 write(0,*)'clean up'

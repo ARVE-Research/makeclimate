@@ -7,7 +7,7 @@ implicit none
 public :: handle_err
 public :: netcdf_create
 
-integer, parameter :: dl = 1
+integer, parameter :: dl = 1  ! deflate level for compressed variables
 
 integer :: ncstat
 
@@ -23,7 +23,7 @@ subroutine handle_err(ncstat)
 integer, intent (in) :: ncstat
 
 if(ncstat /= nf90_noerr) then
-  write(0,*)trim(nf90_strerror(ncstat))
+  write(0,*)'netCDF error: ',trim(nf90_strerror(ncstat))
   stop
 end if
 
@@ -31,13 +31,15 @@ end subroutine handle_err
 
 !--------------------------------------------------------------------------------
 
-subroutine netcdf_create(filename,nx,ny,nt,ncid)
+subroutine netcdf_create(filename,xdimname,ydimname,nx,ny,nt,ncid)
 
 use parametersmod, only : sp,dp,imissing
 
 implicit none
 
 character(*), intent(in)  :: filename
+character(*), intent(in)  :: xdimname
+character(*), intent(in)  :: ydimname
 integer,      intent(in)  :: nx
 integer,      intent(in)  :: ny
 integer,      intent(in)  :: nt
@@ -71,10 +73,10 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ! -------
 ! dimensions
 
-ncstat = nf90_def_dim(ncid,'lon',nx,dimid(1))
+ncstat = nf90_def_dim(ncid,xdimname,nx,dimid(1))
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-ncstat = nf90_def_dim(ncid,'lat',nx,dimid(2))
+ncstat = nf90_def_dim(ncid,ydimname,nx,dimid(2))
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_def_dim(ncid,'time',nt,dimid(3))
@@ -83,28 +85,28 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ! -------
 ! dimension variables
 
-ncstat = nf90_def_var(ncid,'lon',nf90_double,dimid(1),varid)
+ncstat = nf90_def_var(ncid,xdimname,nf90_double,dimid(1),varid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-ncstat = nf90_put_att(ncid,varid,'long_name','longitude')
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_put_att(ncid,varid,'units','degrees_east')
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! ncstat = nf90_put_att(ncid,varid,'long_name','longitude')
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_put_att(ncid,varid,'units','degrees_east')
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_put_att(ncid,varid,'actual_range',[0._dp,0._dp])
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ! ---
 
-ncstat = nf90_def_var(ncid,'lat',nf90_double,dimid(2),varid)
+ncstat = nf90_def_var(ncid,ydimname,nf90_double,dimid(2),varid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-ncstat = nf90_put_att(ncid,varid,'long_name','latitude')
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
-
-ncstat = nf90_put_att(ncid,varid,'units','degrees_north')
-if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! ncstat = nf90_put_att(ncid,varid,'long_name','latitude')
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_put_att(ncid,varid,'units','degrees_north')
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_put_att(ncid,varid,'actual_range',[0._dp,0._dp])
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -137,6 +139,13 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ! -------
 ! regular variables
+
+if (xdimname /= 'lon' .or. ydimname /= 'lat') then
+
+  call defvar_dp(ncid,dimid(1:2),'lon','longitude','degrees_east')
+  call defvar_dp(ncid,dimid(1:2),'lat','latitude','degrees_north')
+
+end if
 
 call defvar(ncid,dimid(1:2),'elv','elevation above mean sea level','m',1._sp,0._sp,cs(1:2))
 call defvar(ncid,dimid,'tmp','2m air temperature','degC',0.1_sp,0._sp,cs)
@@ -202,6 +211,43 @@ ncstat = nf90_put_att(ncid,varid,'source','unknown')
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 end subroutine defvar
+
+!--------------------------------------------------------------------------------
+
+subroutine defvar_dp(ncid,dimid,varname,longname,units)
+
+use parametersmod, only : dp
+
+implicit none
+
+integer,      intent(in) :: ncid
+character(*), intent(in) :: varname
+character(*), intent(in) :: longname
+character(*), intent(in) :: units
+
+integer, dimension(:), intent(in) :: dimid
+
+integer :: varid
+
+
+! ----
+
+ncstat = nf90_def_var(ncid,varname,nf90_double,dimid,varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_att(ncid,varid,'long_name',longname)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_att(ncid,varid,'units',units)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_att(ncid,varid,'actual_range',[0._dp,0._dp])
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_att(ncid,varid,'grid_mapping','crs')
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+end subroutine defvar_dp
 
 !--------------------------------------------------------------------------------
 

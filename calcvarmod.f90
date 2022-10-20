@@ -70,7 +70,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_get_att(bfid,varid,'add_offset',add_offset)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-write(0,'(a,2f8.5)')'read baseline',scale_factor,add_offset
+write(0,'(a,2f8.5)')' read baseline',scale_factor,add_offset
 
 ncstat = nf90_get_var(bfid,varid,base)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -80,7 +80,8 @@ where (base /= missing) rbase = real(base) * scale_factor + add_offset
 ! ---
 ! anomaly
 
-write(0,*)'read anomalies',tlen_anom
+write(status_msg,'(a)')' reading anomalies... '
+call overprint(status_msg)
 
 ncstat = nf90_open(anomfile,nf90_nowrite,afid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -93,6 +94,10 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_close(afid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+write(status_msg,'(a)')' reading anomalies... done'
+call overprint(status_msg)
+write(0,*)
 
 ! ---
 ! output
@@ -126,7 +131,7 @@ do j = 1,numcyc
 
   m = 1 + tlen_blk * (j-1)
 
-  write(status_msg,'(a,3i7)')'working on block ',j,k,m
+  write(status_msg,'(a,3i7)')' working on block ',j,k,m
   call overprint(status_msg)
   
   if (present(llimit)) then
