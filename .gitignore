@@ -28,6 +28,13 @@ autom4te.cache
 /config.sub
 /configure
 /configure.scan
+config/compile
+config/config.guess
+config/config.sub
+config/depcomp
+config/install-sh
+config/ltmain.sh
+config/missing
 /depcomp
 /install-sh
 /missing
