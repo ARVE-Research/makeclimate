@@ -2,9 +2,9 @@
 
 basefile=/home/terraces/datasets/climate/NorthAm_hybrid/NAclimate.nc
 
-outfile=test.nc
+outfile=NAclimate_spinup.nc
 
-numyrs=120
+numyrs=1020
 
 let tlen=$numyrs*12
 
@@ -22,4 +22,3 @@ sed -e "s|BASEFILE|$basefile|g" -e "s|NUMYRS|$numyrs|g" template.namelist > $job
 ncdump -s -v x,y,lon,lat $basefile | sed -f sub.sed | ncgen -k nc4 -o $outfile
 
 ./makeclimate $jobfile $outfile
-

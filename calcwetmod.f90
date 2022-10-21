@@ -46,6 +46,9 @@ write(0,'(a)')'=== working on wetf ==='
 allocate(a(xlen,ylen,12))
 allocate(b(xlen,ylen,12))
 
+! ---
+! read the precip-wetdays coefficients from an external file
+
 ncstat = nf90_open(wetVprefile,nf90_nowrite,cfid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
@@ -65,6 +68,7 @@ ncstat = nf90_close(cfid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ! ---
+! read and write scale factors and add offset
 
 ncstat = nf90_inq_varid(ofid,'pre',ivarid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -93,6 +97,8 @@ allocate(ivar(xlen,ylen,tlen_blk))
 allocate(ovar(xlen,ylen,tlen_blk))
 
 ! ---
+! read transient monthly precipitation calculated previously by makeclimate
+! and calculate wet fraction based on the coefficients read above
 
 actual_range = [9999.,-9999.]
 
@@ -102,7 +108,7 @@ do j = 1,numcyc  ! 30 year cycles
 
   m = 1 + tlen_blk * (j-1)
 
-  write(status_msg,'(a,3i7)')'working on block ',j,k,m
+  write(status_msg,'(a,3i7)')' working on block ',j,k,m
   call overprint(status_msg)
 
   ovar = imissing
@@ -117,7 +123,7 @@ do j = 1,numcyc  ! 30 year cycles
     where (ivar(:,:,i:11+i) /= imissing)
       
       pre = real(ivar(:,:,i:11+i)) * isf + iao
-      wet = (1. - exp(-a * pre))**b 
+      wet = min(1.,max(0.,b * pre**a))
       
       ovar(:,:,i:11+i) = nint((wet - oao) / osf)
       

@@ -465,8 +465,6 @@ call calcvar('wnd','wspd',trim(anompath)//wndfile,llimit=0.)
 
 call calcvar('lght','lght',trim(anompath)//lghtfile,llimit=0.)
 
-goto 100
-
 !--------------------------------------------------
 ! wet days
 
