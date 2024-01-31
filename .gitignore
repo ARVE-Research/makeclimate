@@ -98,3 +98,11 @@ Temporary Items
 *.icloud
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,autotools
+
+# netCDF files
+*.nc
+
+# Fortran object and compiled module files
+*.o
+*.mod
+

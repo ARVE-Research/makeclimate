@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
+
 bin_PROGRAMS = makeclimate
+
 makeclimate_SOURCES =  \
   overprint.c          \
   parametersmod.f90    \
@@ -8,5 +10,6 @@ makeclimate_SOURCES =  \
   calcwetmod.f90       \
   randomdistmod.f90    \
   makeclimate.f90      
+
 clean-local:
 	rm -r -f *.mod *.dSYM

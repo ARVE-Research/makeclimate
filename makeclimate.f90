@@ -1,11 +1,11 @@
 program makeclimate
 
 ! ====================================================================================================
-! Utility program to generate spinup climate data for input to LPJ-LMfire
+! Utility program to generate transient climate data for input to LPJ-LMfire
 ! based on a climatological monthly mean baseline climate (12 months)
 ! and an interannual variability file containing monthly anomalies for
 ! several climate variables. Typically interannual variability is provided by the
-! 20th Century Reanalysis in the form of anomalies reydimvarive to the period covered
+! 20th Century Reanalysis in the form of anomalies relative to the period covered
 ! by the baseline climatology (varies per variable)
 
 ! ===== prerequisite input files both covering the target region and at target resolution =====
@@ -13,7 +13,7 @@ program makeclimate
 ! elevation (elv) (m)
 ! temperature at 2m (tmp) (degC)
 ! diurnal temperature range at 2m (dtr) (degC)
-! total accumuydimvared precipitation (pre) (mm)
+! total accumulated precipitation (pre) (mm)
 ! days with measurable precipitation (wet) (days)
 ! cloud cover full column (cld) (percent)
 ! windspeed at 10m (wnd) (m s-1)
@@ -22,7 +22,7 @@ program makeclimate
 ! --- interannual variability anomalies (separate files) ---
 ! temperature at 2m (tmp) (degC)
 ! diurnal temperature range (dtr) (degC)
-! accumuydimvared precipitation (apcp) (mm)
+! accumulated precipitation (apcp) (mm)
 ! cloud cover full column (tdcd) (percent)
 ! windspeed at 10m (wspd) (m s-1)
 ! lightning strokes (lght) (strokes km-2 d-1)
@@ -32,6 +32,7 @@ program makeclimate
 ! jobfile is a fortran90 .namelist file containing the anomaly file root path and names
 
 ! major revision by JOK January 2021
+! further revisions to support both transient and spinup climate, January 2024
 
 ! ====================================================================================================
 
@@ -44,7 +45,7 @@ use netcdf
 
 implicit none
 
-!------------------------------
+! ------------------------------
 ! arguments
 
 character(200) :: jobfile
@@ -62,12 +63,13 @@ character(200) :: wndfile
 character(200) :: wetVprefile
 character(200) :: lghtfile
 
-integer :: startyr =   0  !year (BP) of the first year of the output climatology
-integer :: numyrs  = 1020  !default value in case it is not specified in the namelist
+! default values for job options in case they are not specified in the namelist
 
-logical :: timeslice = .true.
+integer :: baseyr    =   1900   ! first year of the transient climate or year after the final year of spinup (standard calendar year)
+integer :: numyrs    =   1020   ! number of spinup years to calculate if not specified in the namelist
+logical :: transient = .false.  ! generate spinup or transient climate
 
-namelist  / joboptions / basefile,anompath,tmpfile,dtrfile,prefile,cldfile,wndfile,wetVprefile,lghtfile,startyr,numyrs,timeslice
+namelist  / joboptions / basefile,anompath,tmpfile,dtrfile,prefile,cldfile,wndfile,wetVprefile,lghtfile,baseyr,numyrs,transient
 
 ! local variables
 
@@ -83,9 +85,10 @@ integer :: dimid
 integer :: varid
 
 ! lengths
-integer, parameter :: ycyc = 30
+integer, parameter :: ycyc = 30  ! time block size parameter in years - data will be written out in blocks of this length
 integer :: anomyrs
 integer :: nblocks
+integer :: tlen
 
 ! other variables
 integer :: seed
@@ -108,31 +111,7 @@ integer(i2), allocatable, dimension(:,:) :: var2d
 character(10) :: xdimname = 'lon'
 character(10) :: ydimname = 'lat'
 
-
-
-! integer :: x,y,k
-
-! integer :: day
-
-! integer :: climmonths
-
-! character(80) :: status_msg
-
-! integer(i2) :: missing
-
-! real(sp),   dimension(2) :: actual_range
-
-! integer(i2), allocatable, dimension(:,:,:) :: base
-! integer(i2), allocatable, dimension(:,:,:) :: vout
-
-! real(sp),    allocatable, dimension(:,:,:) :: anom
-! real(sp),    allocatable, dimension(:,:,:) :: rbase
-! real(sp),    allocatable, dimension(:,:,:) :: rvout
-
-! real(sp) :: scale_factor
-! real(sp) :: add_offset
-
-!-----------------------------------------------------------------------------------------------------
+! -----------------------------------------------------------------------------------------------------
 ! program starts here
 ! read job options
 
@@ -143,8 +122,7 @@ open(10,file=jobfile,status='old')
 read(10,nml=joboptions)
 close(10)
 
-!------------------------------------------------------------------------
-
+! ------------------------------------------------------------------------
 ! inquire about the length of the anomaly timeseries and create the offset vector
 
 ncstat = nf90_open(trim(anompath)//tmpfile,nf90_nowrite,afid)
@@ -161,52 +139,79 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 anomyrs = tlen_anom / 12
 
-! work out the 30-year offsets
-
-a = anomyrs / 30
-b = (anomyrs - 10) / 30
-c = (anomyrs - 20) / 30
-
-nblocks = a + b + c
-
 write(0,*)'anomalies have',anomyrs,'years of data'
-write(0,*)tlen_anom
-write(0,*)a,b,c,nblocks
 
-allocate(offset30(nblocks))
-allocate(used(nblocks))
+! ------------------------------------------------------------------------
 
-offset30 = 0
+if (transient) then
 
-m = 1  ! start at month one
-do i = 1,a
-  offset30(i) = m
-  m = m + 360
-end do
+  ! -----------------------------    
+  ! transient climate: use the transient interannual variability from the input anomalies
+  
+  tlen = 12 * ycyc   ! ycyc time block size parameter (set to 30 yrs)
 
-m = 121  ! 10 years offset
-do i = a+1,a+b
-  offset30(i) = m
-  m = m + 360
-end do
+  numcyc = tlen_anom / tlen  ! numcyc number of cycles that will be calculated
 
-m = 241 ! 20 years offset
-do i = a+b+1,nblocks
-  offset30(i) = m
-  m = m + 360
-end do
+  allocate(seg(numcyc))
+  allocate(offset(numcyc))
 
-!------------------------------------------------------------------------
-! calcuydimvare the random sequence of blocks for timeslice (spinup) output
+  do i = 1,numcyc
+  
+    seg(i) = i
+    offset(i) = 1 + tlen * (i - 1)
 
-if (timeslice) then
+    write(0,*)seg(i),offset(i)
 
-  seed = -(32768 + startyr)
+  end do
+
+  write(0,'(a,2i5,a,i5,a)')' transient climatology:',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
+
+else
+
+  ! -----------------------------    
+  ! spinup climate: calculate the random sequence of blocks for repeating output
+  
+  ! work out the 30-year offsets
+
+  a = anomyrs / 30
+  b = (anomyrs - 10) / 30
+  c = (anomyrs - 20) / 30
+
+  nblocks = a + b + c
+  
+  write(0,*)a,b,c,nblocks
+  
+  allocate(offset30(nblocks))
+  allocate(used(nblocks))
+
+  offset30 = 0
+
+  m = 1  ! start at year one month one
+  do i = 1,a
+    offset30(i) = m
+    m = m + 360
+  end do
+
+  m = 121  ! 10 years offset
+  do i = a+1,a+b
+    offset30(i) = m
+    m = m + 360
+  end do
+
+  m = 241 ! 20 years offset
+  do i = a+b+1,nblocks
+    offset30(i) = m
+    m = m + 360
+  end do
+
+  ! -----------------------------    
+
+  seed = -(32768 + baseyr)
 
   call ran_seed(seed,rndst)   !initialize the random seed with the start year
 
-  !------
-  !select periods for construction of climatology
+  ! ------
+  ! select periods for construction of climatology
 
   numcyc = numyrs / 30  ! this will truncate downwards if the number of years requested is not an even multiple
 
@@ -219,10 +224,10 @@ if (timeslice) then
   write(0,'(a,2i5,a,i5,a)')' will generate',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
   write(0,*)'generating sequence order'
 
-  !generate a pseudo-random sequence of 30 year climate blocks
-  !avoid repeating some blocks frequently and never using others by setting a flag vector
-  !to keep choosing random numbers until one that has not already been used is selected
-  !once all values have been used once, reset the flag vector and start again
+  ! generate a pseudo-random sequence of 30 year climate blocks
+  ! avoid repeating some blocks frequently and never using others by setting a flag vector
+  ! to keep choosing random numbers until one that has not already been used is selected
+  ! once all values have been used once, reset the flag vector and start again
 
   open(20,file='sequence.dat',status='unknown')
 
@@ -235,7 +240,6 @@ if (timeslice) then
 
     do
       val = nint(1. + real(nblocks-1) * ranur(rndst))  !generates a random integer between 1 and nblocks
-
       if (.not.used(val)) exit
     end do
 
@@ -248,37 +252,19 @@ if (timeslice) then
 
     offset(i) = offset30(seg(i))
 
-    ! write(0,*)i,seg(i),offset(i)
+    write(0,*)i,seg(i),offset(i)
 
   end do
 
   close(20)
-
-else
-
-  !transient climatology; use the transient interannual variability from the input anomalies
-
-!   ycyc = 20
-!   tlen = 12 * ycyc
-! 
-!   numcyc = 7
-! 
-!   allocate(seg(numcyc))
-!   allocate(offset(numcyc))
-! 
-!   do i = 1,numcyc
-!     seg(i) = i
-!     offset(i) = 1 + tlen * (i - 1)
-! 
-!     write(0,*)seg(i),offset(i)
-! 
-!   end do
-! 
-!   write(0,'(a,2i5,a,i5,a)')' transient climatology:',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
+  
+  ! reset the base year for the first year of the spinup
+  
+  baseyr = baseyr - numyrs
 
 end if
 
-!------------------------------------------------------------------------
+! ------------------------------------------------------------------------
 ! get the dimensions of the input array
 
 ncstat = nf90_open(basefile,nf90_nowrite,bfid)
@@ -306,62 +292,75 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 tlen_out = numyrs * 12
 
-!------------------------------------------------------------------------
-! generate the output file
-! easier to generate the output file using an ncdump of the baseline input file
-
-! call netcdf_create(outfile,xdimname,ydimname,xlen,ylen,tlen_out,ofid)
+! ------------------------------------------------------------------------
+! the output file must be generated using an ncdump of the baseline input file 
+! in the wrapper shell script
 
 ncstat = nf90_open(outfile,nf90_write,ofid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-!------------------------------------------------------------------------
+! ------------------------------------------------------------------------
 ! write the dimension variables
 
-! this will all be done through copy of the baseline input file
+allocate(xdimvar(xlen))
+allocate(ydimvar(ylen))
+allocate(var2d(xlen,ylen))
 
-! write(0,*)'write dimension variables'
-! write(0,*)'NB, dimension variable names'
-! write(0,*)'x ',xdimname
-! write(0,*)'y ',ydimname
-! 
-! ! ---
-! ! xdimvar
-! 
-! allocate(xdimvar(xlen))
-! 
-! ncstat = nf90_inq_varid(bfid,xdimname,varid)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_get_var(bfid,varid,xdimvar)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_inq_varid(ofid,xdimname,varid)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_put_var(ofid,varid,xdimvar)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! deallocate(xdimvar)
-! 
-! ! ---
-! ! ydimvar
-! 
-! allocate(ydimvar(ylen))
-! 
-! ncstat = nf90_inq_varid(bfid,ydimname,varid)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_get_var(bfid,varid,ydimvar)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_inq_varid(ofid,ydimname,varid)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! ncstat = nf90_put_var(ofid,varid,ydimvar)
-! if (ncstat /= nf90_noerr) call handle_err(ncstat)
-! 
-! deallocate(ydimvar)
+! x
+
+ncstat = nf90_inq_varid(bfid,'x',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_get_var(bfid,varid,xdimvar)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_inq_varid(ofid,'x',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_var(ofid,varid,xdimvar)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+! y
+
+ncstat = nf90_inq_varid(bfid,'y',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_get_var(bfid,varid,ydimvar)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_inq_varid(ofid,'y',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_var(ofid,varid,ydimvar)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+! lon
+
+ncstat = nf90_inq_varid(bfid,'lon',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_get_var(bfid,varid,var2d)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_inq_varid(ofid,'lon',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_var(ofid,varid,var2d)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+! lat
+
+ncstat = nf90_inq_varid(bfid,'lat',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_get_var(bfid,varid,var2d)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_inq_varid(ofid,'lat',varid)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+ncstat = nf90_put_var(ofid,varid,var2d)
+if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ! ---
 ! time
@@ -370,9 +369,7 @@ allocate(time(tlen_out))
 
 ! --
 
-yr = 1
-
-ndm = ndaymon(yr)  ! initialize the days per month vector
+ndm = ndaymon(baseyr)  ! initialize the days per month vector
 
 nd = 0
 
@@ -405,7 +402,7 @@ end do
 
 ! --
 
-write(0,*)'puttime',tlen_out
+write(0,*)'writing time',tlen_out
 
 ncstat = nf90_inq_varid(ofid,'time',varid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -413,13 +410,13 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_put_var(ofid,varid,time)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-!------------------------------------------------------------------------
+! ------------------------------------------------------------------------
 ! write the regular variables
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! elevation
 
-allocate(var2d(xlen,ylen))
+write(0,*)'writing elevation'
 
 ncstat = nf90_inq_varid(bfid,'elv',varid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -435,42 +432,42 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 deallocate(var2d)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! temperature
 
 call calcvar('tmp','air',trim(anompath)//tmpfile)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! dtr
 
 call calcvar('dtr','dtr',trim(anompath)//dtrfile,llimit=0.)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! precipitation
 
 call calcvar('pre','apcp',trim(anompath)//prefile,llimit=0.)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! cloud
 
 call calcvar('cld','tcdc',trim(anompath)//cldfile,llimit=0.,ulimit=100.)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! wind
 
 call calcvar('wnd','wspd',trim(anompath)//wndfile,llimit=0.)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! lightning
 
 call calcvar('lght','lght',trim(anompath)//lghtfile,llimit=0.)
 
-!--------------------------------------------------
+! --------------------------------------------------
 ! wet days
 
 call calcwetf(wetVprefile)
 
-!------------------------------------------------------------------------
+! ------------------------------------------------------------------------
 ! close files 
 
 100 continue
@@ -484,6 +481,6 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_close(ofid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-!------------------------------------------------------------------------------------------------------------------------
+! ------------------------------------------------------------------------------------------------------------------------
 
 end program makeclimate

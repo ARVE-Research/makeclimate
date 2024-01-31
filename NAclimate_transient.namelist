@@ -1,0 +1,14 @@
+&joboptions
+transient = .true.
+numyrs    = 180
+baseyr    = 1836
+basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/NAclimate.nc'
+anompath  = '/home/terraces/datasets/climate/NorthAm_hybrid/20CRanomalies/'
+tmpfile   = 'air.2m.mon.mean.nc'
+dtrfile   = 'dtr.2m.mon.mean.nc'
+prefile   = 'prec.mon.mean.nc'
+cldfile   = 'tcdc.eatm.mon.mean.nc'
+wndfile   = 'wspd.10m.mon.mean.nc'
+lghtfile  = 'lght.mon.mean.nc'
+wetVprefile   = '/home/terraces/datasets/climate/NorthAm_hybrid/wetfcoeffs.nc'
+/
