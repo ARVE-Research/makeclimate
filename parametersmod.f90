@@ -29,7 +29,7 @@ integer, allocatable, dimension(:) :: offset
 
 contains
 
-!----------------------------
+! ----------------------------
 
 function ndaymon(year)
 
@@ -42,7 +42,7 @@ integer, intent(in) :: year  !requires year AD as input
 
 integer, dimension(12) :: ndaymon
 
-!---
+! ---
 
 if (leapyear(year)) then
   ndaymon = nd1
@@ -52,7 +52,7 @@ end if
 
 end function ndaymon
 
-!----------------------------
+! ----------------------------
 
 logical function leapyear(year)
 
@@ -60,7 +60,7 @@ implicit none
 
 integer, intent(in) :: year  !requires year AD as input
 
-!---
+! ---
 
 if ((mod(year,4) == 0 .and. mod(year,100) /= 0) .or. mod(year,400) == 0) then
   leapyear = .true.
@@ -70,6 +70,6 @@ end if
 
 end function leapyear
 
-!----------------------------
+! ----------------------------
 
 end module parametersmod

@@ -1,8 +1,9 @@
 &joboptions
-timeslice = .true.
+transient = .false.
 numyrs    = 1020
+baseyr    = 1836
 basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/NAclimate.nc'
-anompath  = '/home/terraces/datasets/climate/NorthAm_hybrid/20CRanomalies/'
+anompath  = '/home/terraces/datasets/climate/NorthAm_hybrid/20CRanomalies/detrended/'
 tmpfile   = 'air.2m.mon.mean.nc'
 dtrfile   = 'dtr.2m.mon.mean.nc'
 prefile   = 'prec.mon.mean.nc'

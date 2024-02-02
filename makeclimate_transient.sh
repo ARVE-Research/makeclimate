@@ -8,6 +8,8 @@ outfile=NAclimate_transient.nc
 
 jobfile=${outfile%%.*}.namelist
 
-ncgen -k nc4 -o $outfile NAclimate_template.cdl
+echo "generating output file:" $outfile
+
+sed -e "s|ANOMTYPE|Transient|g" NAclimate_template.cdl | ncgen -k nc4 -o $outfile 
 
 ./makeclimate $jobfile $outfile

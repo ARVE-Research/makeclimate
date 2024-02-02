@@ -78,6 +78,9 @@ integer :: a,b,c
 integer :: i,j
 integer :: yr
 integer :: m
+integer :: t
+integer :: t0
+integer :: t1
 
 ! netcdf id's
 integer :: afid
@@ -100,6 +103,7 @@ logical, allocatable, dimension(:) :: used
 
 integer, dimension(13) :: nd
 integer, dimension(12) :: ndm
+integer, dimension(12) :: cumdays
 
 type(randomstate) :: rndst
 
@@ -139,7 +143,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 anomyrs = tlen_anom / 12
 
-write(0,*)'anomalies have',anomyrs,'years of data'
+write(0,'(a,i0,a)')'anomalies have ',anomyrs,'years of data'
 
 ! ------------------------------------------------------------------------
 
@@ -164,7 +168,7 @@ if (transient) then
 
   end do
 
-  write(0,'(a,2i5,a,i5,a)')' transient climatology:',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
+  write(0,'(a,2i0,a,i0,a)')' transient climatology:',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
 
 else
 
@@ -220,8 +224,8 @@ else
     numcyc = numcyc + 1
   end if
 
-  write(0,'(i5,a)')numyrs,' years of climate requested'
-  write(0,'(a,2i5,a,i5,a)')' will generate',numcyc,ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
+  write(0,'(i0,a)')numyrs,' years of climate requested'
+  write(0,'(a,i0,a,i0,a,i0,a)')' will generate ',numcyc," ",ycyc,'-year climate cycles = ',numcyc*ycyc,' years of climate'
   write(0,*)'generating sequence order'
 
   ! generate a pseudo-random sequence of 30 year climate blocks
@@ -252,7 +256,7 @@ else
 
     offset(i) = offset30(seg(i))
 
-    write(0,*)i,seg(i),offset(i)
+    ! write(0,*)i,seg(i),offset(i)
 
   end do
 
@@ -306,6 +310,7 @@ allocate(xdimvar(xlen))
 allocate(ydimvar(ylen))
 allocate(var2d(xlen,ylen))
 
+! ----------------------
 ! x
 
 ncstat = nf90_inq_varid(bfid,'x',varid)
@@ -320,6 +325,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_put_var(ofid,varid,xdimvar)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
+! ----------------------
 ! y
 
 ncstat = nf90_inq_varid(bfid,'y',varid)
@@ -334,6 +340,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_put_var(ofid,varid,ydimvar)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
+! ----------------------
 ! lon
 
 ncstat = nf90_inq_varid(bfid,'lon',varid)
@@ -348,6 +355,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_put_var(ofid,varid,var2d)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
+! ----------------------
 ! lat
 
 ncstat = nf90_inq_varid(bfid,'lat',varid)
@@ -362,45 +370,44 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_put_var(ofid,varid,var2d)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-! ---
+! ----------------------
 ! time
 
 allocate(time(tlen_out))
 
-! --
+t0 = 0
 
-ndm = ndaymon(baseyr)  ! initialize the days per month vector
+write(0,*)'base year',baseyr
 
-nd = 0
+yr = baseyr
 
-do j = 1,12
-  nd = eoshift(nd,1,ndm(j))
+do t = 1,tlen_out,12
+
+  ! write(0,*)yr,ndaymon(yr)
+
+  ndm = eoshift(ndaymon(yr),-1,0)
+  
+  cumdays = [(sum(ndm(1:m)),m=1,12)]
+
+  time(t:t+11) = cumdays + t0
+  
+  t0 = time(t+11) + 31.
+
+  yr = yr + 1
+  
 end do
 
-time(1) = nd(1)
+if (.not.transient) then
 
-do i = 2,tlen_out
-  m = mod(i,12)
+  ! invert the time array so it counts down towards the last day of the spinup
   
-  if (m == 0) m = 12
+  t1 = time(tlen_out) + 31  ! set this to 1 January of the first year after the end of the spinup
 
-  if (m == 1) then  ! refill the days per month vector
-  
-    yr = yr + 1
+  do i = 1,tlen_out
+    time(i) = time(i) - t1
+  end do
 
-    ndm = ndaymon(yr)
-
-    do j = 1,12
-      nd = eoshift(nd,1,ndm(j))
-    end do
-    
-  end if
-
-  time(i) = time(i-1) + nd(m)
-  
-end do 
-
-! --
+end if
 
 write(0,*)'writing time',tlen_out
 
@@ -431,6 +438,25 @@ ncstat = nf90_put_var(ofid,varid,var2d)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 deallocate(var2d)
+
+! -----------
+
+
+! i=1
+! do yr = 1,numyrs
+!   do m = 1,12
+!     write(0,*)yr,m,time(i)
+!     i = i + 1
+!   end do
+! end do
+
+! ncstat = nf90_close(bfid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! ncstat = nf90_close(ofid)
+! if (ncstat /= nf90_noerr) call handle_err(ncstat)
+! 
+! stop
 
 ! --------------------------------------------------
 ! temperature

@@ -70,7 +70,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_get_att(bfid,varid,'add_offset',add_offset)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-write(0,'(a,2f8.5)')' read baseline',scale_factor,add_offset
+write(0,'(a,f0.5,a,f0.5)')' read baseline',scale_factor,' ',add_offset
 
 ncstat = nf90_get_var(bfid,varid,base)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
@@ -131,7 +131,7 @@ do j = 1,numcyc
 
   m = 1 + tlen_blk * (j-1)
 
-  write(status_msg,'(a,3i7)')' working on block ',j,k,m
+  write(status_msg,'(a,3i0)')' working on block ',j,k,m
   call overprint(status_msg)
   
   if (present(llimit)) then
@@ -159,7 +159,7 @@ do j = 1,numcyc
 end do
 
 write(0,*)
-write(0,'(a,a,2f12.5)')' writing actual range for ',bvarname,actual_range
+write(0,'(a,a,f0.5,a,f0.5)')' writing actual range for ',bvarname,' ',actual_range
 
 ncstat = nf90_put_att(ofid,varid,'scale_factor',scale_factor)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
