@@ -47,7 +47,7 @@ if test "x$FC_REALNAME" = xifort; then
 
 elif test "x$FC_REALNAME" = xgfortran; then
 
-  FCFLAGS="-O2 -ftree-vectorize -march=native -fno-math-errno -fPIC"
+  FCFLAGS="-O2 -ftree-vectorize -march=native -fno-math-errno -fPIC -ffree-line-length-none"
 
   CPPFLAGS="-Dgfortran $CPPFLAGS"
   FCFLAGS="$FCFLAGS -I$NETCDF_FCFLAGS"

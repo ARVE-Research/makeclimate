@@ -6,7 +6,6 @@ contains
 
 ! --------------------------------------------------------------------------------
 
-
 subroutine calcwetf(wetVprefile)
 
 use parametersmod, only : i2,sp,dp,ndaymon,imissing,rmissing,xlen,ylen,tlen_blk,ofid,numcyc,offset
@@ -37,6 +36,8 @@ integer :: i,j,k,m
 real(sp), dimension(2) :: actual_range
 
 character(80) :: status_msg
+
+real(sp), parameter :: minwet = 1./31.
 
 ! --------------------------------------------------------------
 
@@ -93,8 +94,6 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 allocate(pre(xlen,ylen,12))
 allocate(wet(xlen,ylen,12))
-allocate(ivar(xlen,ylen,tlen_blk))
-allocate(ovar(xlen,ylen,tlen_blk))
 
 ! ---
 ! read transient monthly precipitation calculated previously by makeclimate
@@ -104,29 +103,52 @@ actual_range = [9999.,-9999.]
 
 do j = 1,numcyc  ! 30 year cycles
 
+  allocate(ivar(xlen,ylen,tlen_blk(j)))
+  allocate(ovar(xlen,ylen,tlen_blk(j)))
+
   k = offset(j)
 
-  m = 1 + tlen_blk * (j-1)
+  if (j == 1) then
+    m = 1
+  else
+    m = 1 + sum(tlen_blk(1:j-1))  ! start value for write
+  end if
 
   write(status_msg,'(a,3i7)')' working on block ',j,k,m
   call overprint(status_msg)
 
   ovar = imissing
 
-  ncstat = nf90_get_var(ofid,ivarid,ivar,start=[1,1,m],count=[xlen,ylen,tlen_blk])
+  ncstat = nf90_get_var(ofid,ivarid,ivar,start=[1,1,m],count=[xlen,ylen,tlen_blk(j)])
   if (ncstat /= nf90_noerr) call handle_err(ncstat)  
 
-  do i = 1,tlen_blk,12   ! one whole year at a time
+  do i = 1,tlen_blk(j),12   ! one whole year at a time
     
     wet = rmissing
     
     where (ivar(:,:,i:11+i) /= imissing)
-      
+    
       pre = real(ivar(:,:,i:11+i)) * isf + iao
-      wet = min(1.,max(0.,b * pre**a))
+    
+      where (pre > 0)
+        where (a < 100.)
       
+          wet = min(1.,max(0.,b * pre**a))
+
+        elsewhere
+        
+          wet = minwet
+
+        end where
+
+      elsewhere
+        
+        wet = 0.
+
+      end where
+
       ovar(:,:,i:11+i) = nint((wet - oao) / osf)
-      
+
     end where
     
     actual_range(1) = min(actual_range(1),minval(wet,mask = wet /= rmissing))
@@ -134,8 +156,13 @@ do j = 1,numcyc  ! 30 year cycles
     
   end do
 
-  ncstat = nf90_put_var(ofid,ovarid,ovar,start=[1,1,m],count=[xlen,ylen,tlen_blk])
-  if (ncstat /= nf90_noerr) call handle_err(ncstat)  
+  ncstat = nf90_put_var(ofid,ovarid,ovar,start=[1,1,m],count=[xlen,ylen,tlen_blk(j)])
+  if (ncstat /= nf90_noerr) call handle_err(ncstat)
+  
+  ! ---
+  
+  deallocate(ivar)
+  deallocate(ovar)
 
 end do
 

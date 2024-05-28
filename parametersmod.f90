@@ -15,8 +15,6 @@ integer, parameter :: dp = real64
 integer(i2), parameter :: imissing = -32768
 real(sp), parameter    :: rmissing = -9999.
 
-integer, parameter :: tlen_blk = 12 * 30  ! number of months for calculation and incremental output
-
 integer :: xlen
 integer :: ylen
 integer :: tlen_out    ! number of months to output
@@ -26,6 +24,7 @@ integer :: ofid
 integer :: numcyc
 
 integer, allocatable, dimension(:) :: offset
+integer, allocatable, dimension(:) :: tlen_blk
 
 contains
 
