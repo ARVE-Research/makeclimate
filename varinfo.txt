@@ -1,0 +1,6 @@
+tsurf tmp add -9999 -9999
+dtdiurn dtr add 0 -9999
+prec pre add 0 -9999
+pcldt cld add 0 100
+wsurf wnd add 0 -9999
+prec_mc lght mul 0 -9999

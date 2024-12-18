@@ -9,6 +9,7 @@ makeclimate_SOURCES =  \
   calcvarmod.f90       \
   calcwetmod.f90       \
   randomdistmod.f90    \
+  calendarmod.f90      \
   makeclimate.f90      
 
 clean-local:
