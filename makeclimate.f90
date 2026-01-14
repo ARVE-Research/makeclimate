@@ -62,11 +62,11 @@ character(200) :: dtrfile
 character(200) :: prefile
 character(200) :: cldfile
 character(200) :: wndfile
-character(200) :: wetVprefile
+character(200) :: wetfile
 character(200) :: lghtfile
 character(200) :: varinfofile
 
-type(varinfotype), dimension(6) :: varinfo
+type(varinfotype), dimension(7) :: varinfo
 
 ! default values for job options in case they are not specified in the namelist
 
@@ -76,7 +76,7 @@ logical :: transient = .false.  ! generate spinup or transient climate
 
 namelist  / joboptions /                      &
   baseyr,numyrs,transient,basefile,anompath,  &
-  tmpfile,dtrfile,prefile,cldfile,wndfile,wetVprefile,lghtfile,varinfofile
+  tmpfile,dtrfile,prefile,cldfile,wndfile,wetfile,lghtfile,varinfofile
 
 ! local variables
 
@@ -134,12 +134,16 @@ type(timestruct) :: ts
 
 ! initialize variables with default values (anomaly name, baseline name)
 
-varinfo(1) = varinfotype('air','tmp')
-varinfo(2) = varinfotype('dtr','dtr')
-varinfo(3) = varinfotype('acpc','pre')
-varinfo(4) = varinfotype('tcdc','cld')
-varinfo(5) = varinfotype('wspd','wnd')
-varinfo(6) = varinfotype('lght','lght')
+varinfo%ll = -9999.
+varinfo%ul = -9999.
+
+varinfo(1) = varinfotype('air','tmp',op='add')
+varinfo(2) = varinfotype('dtr','dtr',op='add')
+varinfo(3) = varinfotype('apcp','pre',op='add',ll=0.)
+varinfo(4) = varinfotype('tcdc','cld',op='add',ll=0.,ul=100.)
+varinfo(5) = varinfotype('wspd','wnd',op='add',ll=0.)
+varinfo(6) = varinfotype('lght','lght',op='add',ll=0.)
+varinfo(7) = varinfotype('wet','wet',op='add',ll=0.,ul=1.)
 
 ! -----
 
@@ -152,13 +156,13 @@ open(10,file=jobfile,status='old')
 read(10,nml=joboptions)
 close(10)
 
-if (varinfofile /= '') then
-
-  open(10,file=varinfofile)
-  read(10,*)varinfo
-  close(10)
-
-end if
+! if (varinfofile /= '') then
+! 
+!   open(10,file=varinfofile)
+!   read(10,*)varinfo
+!   close(10)
+! 
+! end if
 
 do i = 1,size(varinfo)
   write(0,*)i,varinfo(i)
@@ -573,7 +577,9 @@ call calcvar(varinfo(6),trim(anompath)//lghtfile)
 ! --------------------------------------------------
 ! wet days
 
-call calcwetf(wetVprefile)
+call calcvar(varinfo(7),trim(anompath)//wetfile)
+
+! call calcwetf(wetVprefile)
 
 ! ------------------------------------------------------------------------
 ! close files 

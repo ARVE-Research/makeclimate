@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 module purge ; module load Autotools pkg-config netCDF-Fortran
 
-outfile=ModelE-LM_30m_spinup.nc
+jobfile=${1}
 
-jobfile=${outfile%%.*}.namelist
+outfile=${jobfile%%.*}.nc
 
 echo "generating output file:" $outfile
 
-sed -e "s|ANOMTYPE|Transient|g" global_30m_template.cdl | ncgen -k 4 -o $outfile 
+sed -e "s|ANOMTYPE|Spinup|g" global_30m_template.cdl | ncgen -k 4 -o $outfile 
 
 ./makeclimate $jobfile $outfile

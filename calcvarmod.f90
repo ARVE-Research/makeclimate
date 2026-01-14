@@ -244,6 +244,30 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 end subroutine calcvar
 
+! ---------------------------------------------------------
+
+subroutine overprint(message)
+
+use parametersmod, only : stderr
+
+implicit none
+
+! argument
+
+character(*), intent(in) :: message
+
+! parameter
+
+character, parameter :: cr = char(13)
+
+! ---
+
+write(stderr,'(a)',advance='no')message
+flush(0)
+write(0,'(a1)',advance='no')cr
+
+end subroutine overprint
+
 !--------------------------------------------------------------------------------
 
 end module calcvarmod

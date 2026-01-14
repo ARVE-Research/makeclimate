@@ -1,6 +1,6 @@
 module parametersmod
 
-use iso_fortran_env, only : int16,int32,real32,real64
+use iso_fortran_env  ! , only : int16,int32,real32,real64
 
 implicit none
 
@@ -11,6 +11,8 @@ integer, parameter :: i2 = int16
 integer, parameter :: i4 = int32
 integer, parameter :: sp = real32
 integer, parameter :: dp = real64
+
+integer, parameter :: stderr = error_unit
 
 integer(i2), parameter :: imissing = -32768
 real(sp), parameter    :: rmissing = -9999.

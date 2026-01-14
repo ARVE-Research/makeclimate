@@ -11,6 +11,7 @@ subroutine calcwetf(wetVprefile)
 use parametersmod, only : i2,sp,dp,ndaymon,imissing,rmissing,xlen,ylen,tlen_blk,ofid,numcyc,offset
 use netcdfmod,     only : ncstat,handle_err
 use netcdf
+use calcvarmod,    only : overprint
 
 implicit none
 

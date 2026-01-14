@@ -3,7 +3,6 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = makeclimate
 
 makeclimate_SOURCES =  \
-  overprint.c          \
   parametersmod.f90    \
   netcdfmod.f90        \
   calcvarmod.f90       \
