@@ -4,7 +4,9 @@ module purge ; module load Autotools pkg-config netCDF-Fortran
 
 jobfile=${1}
 
-outfile=${jobfile%%.*}.nc
+tmp=${jobfile##*/}
+
+outfile=climate/30m/${tmp%%.*}.nc
 
 echo "generating output file:" $outfile
 

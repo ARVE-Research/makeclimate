@@ -57,8 +57,8 @@ character(200) :: outfile
 
 character(200) :: basefile
 character(200) :: anompath
-character(200) :: tmpfile
-character(200) :: dtrfile
+character(200) :: tminfile
+character(200) :: tmaxfile
 character(200) :: prefile
 character(200) :: cldfile
 character(200) :: wndfile
@@ -76,7 +76,7 @@ logical :: transient = .false.  ! generate spinup or transient climate
 
 namelist  / joboptions /                      &
   baseyr,numyrs,transient,basefile,anompath,  &
-  tmpfile,dtrfile,prefile,cldfile,wndfile,wetfile,lghtfile,varinfofile
+  tminfile,tmaxfile,prefile,cldfile,wndfile,wetfile,lghtfile,varinfofile
 
 ! local variables
 
@@ -119,6 +119,8 @@ type(randomstate) :: rndst
 real(dp),    allocatable, dimension(:)   :: xdimvar
 real(dp),    allocatable, dimension(:)   :: ydimvar
 real(dp),    allocatable, dimension(:)   :: time
+real(dp),    allocatable, dimension(:,:) :: geocoord
+
 integer(i2), allocatable, dimension(:,:) :: var2d
 
 character(10) :: xdimname = 'lon'
@@ -137,8 +139,8 @@ type(timestruct) :: ts
 varinfo%ll = -9999.
 varinfo%ul = -9999.
 
-varinfo(1) = varinfotype('air','tmp',op='add')
-varinfo(2) = varinfotype('dtr','dtr',op='add')
+varinfo(1) = varinfotype('tmin','tmin',op='add')
+varinfo(2) = varinfotype('tmax','tmax',op='add')
 varinfo(3) = varinfotype('apcp','pre',op='add',ll=0.)
 varinfo(4) = varinfotype('tcdc','cld',op='add',ll=0.,ul=100.)
 varinfo(5) = varinfotype('wspd','wnd',op='add',ll=0.)
@@ -171,7 +173,9 @@ end do
 ! ------------------------------------------------------------------------
 ! inquire about the length of the anomaly timeseries and create the offset vector
 
-ncstat = nf90_open(trim(anompath)//tmpfile,nf90_nowrite,afid)
+write(0,*)'getdims ',trim(anompath)//tminfile
+
+ncstat = nf90_open(trim(anompath)//tminfile,nf90_nowrite,afid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_inq_dimid(afid,'time',dimid)
@@ -365,6 +369,8 @@ allocate(var2d(xlen,ylen))
 
 if (projgrid) then
 
+  allocate(geocoord(xlen,ylen))
+
   ! ----------------------
   ! x
   
@@ -401,13 +407,13 @@ if (projgrid) then
   ncstat = nf90_inq_varid(bfid,'lon',varid)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
-  ncstat = nf90_get_var(bfid,varid,var2d)
+  ncstat = nf90_get_var(bfid,varid,geocoord)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
   ncstat = nf90_inq_varid(ofid,'lon',varid)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
-  ncstat = nf90_put_var(ofid,varid,var2d)
+  ncstat = nf90_put_var(ofid,varid,geocoord)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
   ! ----------------------
@@ -416,14 +422,16 @@ if (projgrid) then
   ncstat = nf90_inq_varid(bfid,'lat',varid)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
-  ncstat = nf90_get_var(bfid,varid,var2d)
+  ncstat = nf90_get_var(bfid,varid,geocoord)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
   ncstat = nf90_inq_varid(ofid,'lat',varid)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
   
-  ncstat = nf90_put_var(ofid,varid,var2d)
+  ncstat = nf90_put_var(ofid,varid,geocoord)
   if (ncstat /= nf90_noerr) call handle_err(ncstat)
+  
+  deallocate(geocoord)
 
 else
 
@@ -545,14 +553,14 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 deallocate(var2d)
 
 ! --------------------------------------------------
-! temperature
+! tmin
 
-call calcvar(varinfo(1),trim(anompath)//tmpfile)
+call calcvar(varinfo(1),trim(anompath)//tminfile)
 
 ! --------------------------------------------------
-! dtr
+! tmax
 
-call calcvar(varinfo(2),trim(anompath)//dtrfile)
+call calcvar(varinfo(2),trim(anompath)//tmaxfile)
 
 ! --------------------------------------------------
 ! precipitation

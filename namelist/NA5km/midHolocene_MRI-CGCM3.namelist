@@ -1,0 +1,14 @@
+&joboptions
+transient = .false.
+numyrs    = 1020
+baseyr    = 1836
+basefile  = '/home/terraces/projects/LPJ-LMfire_paleo2025/makepaleoclimate/paleoclimate/NA5km/midHolocene_MRI-CGCM3.nc'
+anompath  = '/home/terraces/datasets/climate/NorthAm_hybrid/20CRanomalies/detrended/'
+tminfile  = 'tmin.2m.mon.mean.nc'
+tmaxfile  = 'tmax.2m.mon.mean.nc'
+prefile   = 'prec.mon.mean.nc'
+cldfile   = 'tcdc.eatm.mon.mean.nc'
+wndfile   = 'wspd.10m.mon.mean.nc'
+lghtfile  = 'lght.mon.mean.nc'
+wetfile   = 'wetfrac.mon.mean.nc'
+/
