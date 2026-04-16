@@ -2,13 +2,13 @@
 transient = .false.
 numyrs    = 1020
 baseyr    = 1836
-basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/NAclimate.nc'
+basefile  = '/home/terraces/projects/LPJ-LMfire_paleo2025/makepaleoclimate/paleoclimate/NA5km/1836-1865_mean_20CR.nc'
 anompath  = '/home/terraces/datasets/climate/NorthAm_hybrid/20CRanomalies/detrended/'
-tmpfile   = 'air.2m.mon.mean.nc'
-dtrfile   = 'dtr.2m.mon.mean.nc'
+tminfile  = 'tmin.2m.mon.mean.nc'
+tmaxfile  = 'tmax.2m.mon.mean.nc'
 prefile   = 'prec.mon.mean.nc'
 cldfile   = 'tcdc.eatm.mon.mean.nc'
 wndfile   = 'wspd.10m.mon.mean.nc'
 lghtfile  = 'lght.mon.mean.nc'
-wetVprefile   = '/home/terraces/datasets/climate/NorthAm_hybrid/wetfcoeffs.nc'
+wetfile   = 'wetfrac.mon.mean.nc'
 /
