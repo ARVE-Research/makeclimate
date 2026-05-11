@@ -158,13 +158,13 @@ open(10,file=jobfile,status='old')
 read(10,nml=joboptions)
 close(10)
 
-! if (varinfofile /= '') then
-! 
-!   open(10,file=varinfofile)
-!   read(10,*)varinfo
-!   close(10)
-! 
-! end if
+if (varinfofile /= '') then
+
+  open(10,file=varinfofile)
+  read(10,*)varinfo
+  close(10)
+
+end if
 
 do i = 1,size(varinfo)
   write(0,*)i,varinfo(i)
