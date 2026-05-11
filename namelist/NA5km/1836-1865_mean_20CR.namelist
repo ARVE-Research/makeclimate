@@ -12,3 +12,9 @@ wndfile   = 'wspd.10m.mon.mean.nc'
 lghtfile  = 'lght.mon.mean.nc'
 wetfile   = 'wetfrac.mon.mean.nc'
 /
+
+
+! notes
+! cloud baseline should be in fraction
+! cloud anomalies are in percent
+! makeclimate.f90 needs to adjust and output cloud as fraction

@@ -142,7 +142,7 @@ varinfo%ul = -9999.
 varinfo(1) = varinfotype('tmin','tmin',op='add')
 varinfo(2) = varinfotype('tmax','tmax',op='add')
 varinfo(3) = varinfotype('apcp','pre',op='add',ll=0.)
-varinfo(4) = varinfotype('tcdc','cld',op='add',ll=0.,ul=100.)
+varinfo(4) = varinfotype('tcdc','cld',op='add',ll=0.,ul=1.)
 varinfo(5) = varinfotype('wspd','wnd',op='add',ll=0.)
 varinfo(6) = varinfotype('lght','lght',op='add',ll=0.)
 varinfo(7) = varinfotype('wet','wet',op='add',ll=0.,ul=1.)

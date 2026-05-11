@@ -113,8 +113,6 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 ncstat = nf90_get_att(bfid,varid,'add_offset',add_offset)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
-if (trim(bvarname) == 'cld') scale_factor = 0.01
-
 write(0,'(a,f0.5,a,f0.5)')' read baseline: ',scale_factor,' ',add_offset
 
 ncstat = nf90_get_var(bfid,varid,base)
@@ -136,6 +134,8 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 ncstat = nf90_get_var(afid,varid,anom)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
+
+if (trim(avarname) == 'tcdc') anom = anom * 0.01  ! cloud anomalies in 20CR are stored as percent, adjust to fraction
 
 ncstat = nf90_close(afid)
 if (ncstat /= nf90_noerr) call handle_err(ncstat)
