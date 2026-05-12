@@ -105,6 +105,7 @@ integer :: tlen
 ! other variables
 integer :: seed
 integer :: val
+integer :: io
 
 integer, allocatable, dimension(:) :: seg
 integer, allocatable, dimension(:) :: offset30 ! index of the starting value of the 30-year climate blocks
@@ -160,15 +161,23 @@ close(10)
 
 if (varinfofile /= '') then
 
+  i = 1
+
   open(10,file=varinfofile)
-  read(10,*)varinfo
+  read(10,*) ! header row
+  do
+    read(10,*,iostat=io)varinfo(i)
+    
+    if (io < 0) exit
+
+    write(0,*)i,varinfo(i)
+
+    i = i + 1
+  end do
+  
   close(10)
 
 end if
-
-do i = 1,size(varinfo)
-  write(0,*)i,varinfo(i)
-end do
 
 ! ------------------------------------------------------------------------
 ! inquire about the length of the anomaly timeseries and create the offset vector
@@ -186,7 +195,7 @@ if (ncstat /= nf90_noerr) call handle_err(ncstat)
 
 anomyrs = tlen_anom / 12
 
-write(0,'(a,i0,a)')'anomalies have ',anomyrs,' years of data'
+write(0,'(a,i0,a,i0,a)')' anomalies have ',anomyrs,' years of data. tlen = ',tlen_anom,' months.'
 
 ! ------------------------------------------------------------------------
 

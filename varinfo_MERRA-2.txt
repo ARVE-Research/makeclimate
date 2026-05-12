@@ -1,0 +1,8 @@
+# anomaly varname, baseline varname, operation, lower limit, upper limit
+T2MMIN  tmin  add -9999 -9999 
+T2MMAX  tmax  add -9999 -9999
+PRECTOT  pre  add     0 -9999
+CLDTOT   cld  add     0     1
+SPEED    wnd  add     0 -9999
+density lght  add     0 -9999
+wetf     wet  add     0     1
