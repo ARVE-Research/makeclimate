@@ -61,11 +61,12 @@ allocate(time(tlen))
 nyrs = tlen / 12
 
 ! -------------------------------------------------------
-! the input year will always = the last year of the timeseries
 
 read(cyr,*)yr
 
 if (bpflag == 'bp') then
+
+  ! the input year will equal the last year of the timeseries
 
   yrbp = yr
 
@@ -75,14 +76,20 @@ if (bpflag == 'bp') then
     bcad = 1950 - yrbp
   end if
 
+  y1 = bcad
+  y0 = y1 - nyrs + 1
+
 else
 
+ ! the input year is the first year of the timeseries
+
   bcad = yr
+  
+  y0 = bcad
+  y1 = y0 + nyrs - 1
 
 end if
 
-y1 = bcad
-y0 = y1 - nyrs + 1
 
 write(0,*)'writing: ',bcad,nyrs,y0,y1
 

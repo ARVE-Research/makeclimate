@@ -1,15 +1,13 @@
 &joboptions
-transient = .true.
-numyrs    = 44
-baseyr    = 1980
-basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/update2026/NAclimate5km.nc'
-anompath  = '/home/terraces/datasets/climate/MERRA-2/1980-2024/anomalies/NA5km/'
-tminfile  = 'temperature_1980-2024.nc'
-tmaxfile  = 'temperature_1980-2024.nc'
-prefile   = 'precipitation_1980-2024.nc'
-cldfile   = 'cloud_1980-2024.nc'
-wndfile   = 'wind_1980-2024.nc'
-wetfile   = 'wetf_1980-2024.nc'
-lghtfile  = 'lght-est_1980-2024.nc'
-varinfofile = '/home/terraces/datasets/climate/MERRA-2/makeclimate/varinfo_MERRA-2.txt'
+  transient = .true.
+  basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/update2026/NAclimate5km.nc'
+  anompath  = '/home/terraces/datasets/climate/MERRA-2/1980-2024/anomalies/NA5km/'
+  tminfile  = 'temperature_1980-2024.nc'
+  tmaxfile  = 'temperature_1980-2024.nc'
+  prefile   = 'precipitation_1980-2024.nc'
+  cldfile   = 'cloud_1980-2024.nc'
+  wndfile   = 'wind_1980-2024.nc'
+  wetfile   = 'wetf_1980-2024.nc'
+  lghtfile  = 'lght-est_1980-2024.nc'
+  varinfofile = '/home/terraces/datasets/climate/MERRA-2/makeclimate/varinfo_MERRA-2.txt'
 /
