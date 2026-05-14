@@ -1,0 +1,15 @@
+&joboptions
+transient = .true.
+numyrs    = 44
+baseyr    = 1980
+basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/update2026/NAclimate5km.nc'
+anompath  = '/home/terraces/datasets/climate/MERRA-2/anomalies/NA5km/'
+tminfile  = 'temp_1980-2023.nc'
+tmaxfile  = 'temp_1980-2023.nc'
+prefile   = 'prec_1980-2023.nc'
+cldfile   = 'cldp_1980-2023.nc'
+wndfile   = 'wspd_1980-2023.nc'
+wetfile   = 'wetf_1980-2023.nc'
+lghtfile  = 'cape_1980-2023_relanom.nc'
+varinfofile = '/home/terraces/datasets/climate/MERRA-2/makeclimate/varinfo_MERRA-2.txt'
+/

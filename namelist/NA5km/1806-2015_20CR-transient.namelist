@@ -1,0 +1,13 @@
+&joboptions
+  transient = .true.
+  basefile  = '/home/terraces/datasets/climate/NorthAm_hybrid/update2026/NAclimate5km.nc'
+  anompath  = '/home/terraces/datasets/climate/reanalysis20c/V3/2026download/anomalies/raw/NA5km'
+  tminfile  = 'tmin.2m.mon.mean.nc'
+  tmaxfile  = 'tmax.2m.mon.mean.nc'
+  prefile   = 'apcp.mon.mean.nc'
+  cldfile   = 'tcdc.eatm.mon.mean.nc'
+  wndfile   = 'wspd.10m.mon.mean.nc'
+  wetfile   = 'wetf.mon.mean.nc'
+  lghtfile  = 'lght.mon.mean.nc'
+  varinfofile = '/home/terraces/datasets/climate/MERRA-2/makeclimate/varinfo_MERRA-2.txt'
+/
